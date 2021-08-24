@@ -1,19 +1,14 @@
 package Logic;
 
 import Annotations.Entity;
-import Annotations.Primary;
 import Util.ColumnField;
-import Util.Configuration;
 import Util.ConnectionUtil;
 import Util.Metamodel;
-
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Minimal ORM, a "simple" ORM that gets the job done
@@ -24,10 +19,13 @@ public class mORM {
 
     /**
      * inserts a row into the database by taking in a metamodel of the data to be entered and using it to find the
-     * values that will need to be entered into each column for a database insertion to function properly
+     * values that will need to be entered into each column,
+     * then entering those values using the getter methods of the passed object
      * @param meta
+     * @param obj object to be entered
+     * @return returns an int to indicate the insertion was successful
      */
-    static public void insertRow(Metamodel<?> meta, Object obj) { //TODO add unit testing
+    static public int insertRow(Metamodel<?> meta, Object obj) { //TODO add unit testing
         StringBuilder builder = new StringBuilder();
         List<ColumnField> columns = meta.getColumns();
         builder.append("INSERT INTO " + obj.getClass().getAnnotation(Entity.class).tableName().toLowerCase() + " (" + columns.get(0).getColumnName());
@@ -58,7 +56,7 @@ public class mORM {
             for (int k = 0; k < methList2.size(); k++){
                 ps.setObject(k+1, methList2.get(k).invoke(obj));
             }
-            ps.executeUpdate();
+            return ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (InvocationTargetException e) {
@@ -66,13 +64,19 @@ public class mORM {
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
+        return 0;
     }
 
-
-
-    static public Object selectRow(Metamodel<?> meta, Object obj, int id) {
+    /**
+     * selects a row from the database by first identifying the desired row, then creating an object of the class type of the row
+     * and using the setter methods of the class to fill its fields
+     * @param meta
+     * @param id id of the row to be selected
+     * @return returns the object which has been selected
+     */
+    static public Object selectRow(Metamodel<?> meta, int id) {
         String sql = "SELECT * FROM "
-                + obj.getClass().getAnnotation(Entity.class).tableName().toLowerCase()
+                + meta.getClazz().getAnnotation(Entity.class).tableName().toLowerCase()
                 + " WHERE "
                 + meta.getPrimaryKey().getColumnName()
                 + " = ?";
@@ -85,9 +89,8 @@ public class mORM {
 
             ResultSetMetaData rsmd = rs.getMetaData();
 
-            Method [] methList = obj.getClass().getMethods();
+            Method [] methList = meta.getClazz().getMethods();
             List<Method> methList2 = new ArrayList<>();
-            //Method setPK = null;
 
             Object o = meta.getClazz().newInstance();
 
@@ -97,14 +100,9 @@ public class mORM {
                             ("set" + rsmd.getColumnName(i).toLowerCase())) {
                         methList2.add(methList[k]); //methlist2 now contains setter methods
                     }
-//                    else if (methList[k].getName().toLowerCase().contains
-//                            ("set" + meta.getPrimaryKey().getColumnName().toLowerCase())){
-//                        setPK = methList[k];
-//                    }
                 }
             }
             rs.next();
-            //setPK.invoke(o, rs.getObject(1));
 
             for (int i = 0; i < methList2.size(); i++){
                 methList2.get(i).invoke(o, rs.getObject(i+1));
@@ -123,11 +121,19 @@ public class mORM {
     } //TODO test this code
 
 
-    //TODO unit test for sure, seems a little rickety tbh (though it passed THIS test)
-    static public void updateCell(Metamodel<?> meta, Object obj, String column, Object newVal, int id) {
+    /**
+     * updates a cell in the database by taking in "coordinates" for its location and changing the value within
+     * @param meta
+     * @param column the column or "x" coordinate of the cell
+     * @param newVal the value the cell is to be updated with
+     * @param id the id or "y" coordinate of the cell
+     * @return returns an int indicating whether the update was successful or not
+     */
+    //TODO test this code
+    static public int updateCell(Metamodel<?> meta, String column, Object newVal, int id) {
 
         String sql = "UPDATE "
-                + obj.getClass().getAnnotation(Entity.class).tableName().toLowerCase()
+                + meta.getClazz().getAnnotation(Entity.class).tableName().toLowerCase()
                 + " SET "
                 + column
                 + " = ? WHERE "
@@ -141,15 +147,22 @@ public class mORM {
             ps.setObject(1, newVal);
             ps.setInt(2, id);
 
-            ps.executeUpdate();
+            return ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return 0;
     }
 
-    static public boolean deleteRow(Metamodel<?> meta, Object obj, int id) { //TODO add unit testing
+    /**
+     * deletes a row from the database by its id
+     * @param meta
+     * @param id the id of the row to be deleted
+     * @return returns a boolean indicating whether the deletion was successful or not
+     */
+    static public boolean deleteRow(Metamodel<?> meta, int id) { //TODO add unit testing
         String sql = "DELETE FROM "
-                + obj.getClass().getAnnotation(Entity.class).tableName().toLowerCase()
+                + meta.getClazz().getAnnotation(Entity.class).tableName().toLowerCase()
                 + " WHERE "
                 + meta.getPrimaryKey().getColumnName()
                 + "=?";

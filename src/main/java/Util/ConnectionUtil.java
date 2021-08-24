@@ -10,9 +10,9 @@ public class ConnectionUtil {
     public static Connection getConnection() {
 
         try {
-//            Class.forName("org.postgresql.Driver");
+            Class.forName("org.postgresql.Driver");
             connection = DriverManager.getConnection(System.getenv("db_host"), System.getenv("db_root"), System.getenv("db_pass"));
-        } catch (SQLException e/*| ClassNotFoundException e*/) {
+        } catch (SQLException | ClassNotFoundException e) {
             e.printStackTrace();
         }
 

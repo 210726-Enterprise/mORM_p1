@@ -36,16 +36,9 @@ public class Metamodel<T> {
     }
 
     //Getters
-    public String getClassName() {
-        return clazz.getName();
-    }
 
     public Class<?> getClazz(){
         return clazz;
-    }
-
-    public String getSimpleClassName() {
-        return clazz.getSimpleName();
     }
 
     public PKField getPrimaryKey(){
@@ -60,7 +53,7 @@ public class Metamodel<T> {
     }
 
 
-    //Setter
+    //Setters
     public void setColumns(){
         Field[] fields = clazz.getDeclaredFields();
         for (Field field : fields) {
