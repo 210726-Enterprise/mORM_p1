@@ -1,5 +1,5 @@
 # Minimal ORM
-This ORM requires that any models to be persisted on the database have a table already on the database as there is no method to dynamically create one.
+This ORM requires that any models to be persisted on the database have a table already on the database as there is currently no method to dynamically create one.
 
 In addition: Models must be identified with the "Entity" annotation.
 
